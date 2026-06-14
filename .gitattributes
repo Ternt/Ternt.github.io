@@ -1,4 +1,0 @@
-*.bat   text eol=crlf   whitespace=blank-at-eol,blank-at-eof,space-before-tab,tab-in-indent,trailing-space,tabwidth=4
-*.sh    text eol=lf     whitespace=blank-at-eol,blank-at-eof,space-before-tab,tab-in-indent,trailing-space,tabwidth=4
-*.html  text eol=lf     whitespace=blank-at-eol,blank-at-eof,space-before-tab,tab-in-indent,trailing-space,tabwidth=4
-*.js    text eol=lf     whitespace=blank-at-eol,blank-at-eof,space-before-tab,tab-in-indent,trailing-space,tabwidth=4

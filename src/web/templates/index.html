@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@200..900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <script type='text/javascript' src="https://cdn.jsdelivr.net/gh/eligrey/FileSaver.js/dist/FileSaver.min.js"> </script>
+    <script type='text/javascript'>
+      function saveFileFromMEMFSToDisk(memoryFSname, localFSname)     // This can be called by C/C++ code
+      {
+        var isSafari = false; // Not supported, navigator.userAgent access is being restricted
+        //var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        var data = FS.readFile(memoryFSname);
+        var blob;
+
+        if (isSafari) blob = new Blob([data.buffer], { type: "application/octet-stream" });
+        else blob = new Blob([data.buffer], { type: "application/octet-binary" });
+
+        // NOTE: SaveAsDialog is a browser setting. For example, in Google Chrome,
+        // in Settings/Advanced/Downloads section you have a setting:
+        // 'Ask where to save each file before downloading' - which you can set true/false.
+        // If you enable this setting it would always ask you and bring the SaveAsDialog
+        saveAs(blob, localFSname);
+      }
+    </script>
+  </head>
+
+  <body>
+    <div id="header-section">
+      <p id="site-title" class="space-mono-bold clickable">
+      TERNT.blog
+      </p>
+      <div id="nav-section" class="space-regular">
+        <div id="nav-tabs">
+          <a id="nav-tab" class="clickable underline highlight">
+            Index
+          </a>
+        </div>
+      </div>
+    </div>
+    <div id="body-section">
+    </div>
+    <div id="footer-section" class="space-semibold">
+      <a>This is a footer.</a>
+    </div>
+    <img id="cat-bot" class="clickable" src="/maxwell-spinning.webp" alt="A black cat">
+  </body>
+</html>
