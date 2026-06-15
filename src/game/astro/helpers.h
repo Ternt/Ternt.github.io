@@ -6,8 +6,10 @@
 ////////////////////////////
 //- Helper CLib Includes
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 ////////////////////////////
 //- Helper Type Definitions
@@ -27,11 +29,28 @@ typedef s64       b64;
 typedef float     f32;
 typedef double    f64;
 typedef size_t    usize;
+typedef uintptr_t uptr;
 
 ////////////////////////////
 //- Helper Intrinsics
 
-#define AlignOf(T) __alignof__(T)
+#if defined(_MSC_VER)
+# define AlignOf(T) __alignof(T)
+#elif defined(__clang__) 
+# define AlignOf(T) __alignof(T)
+#elif defined(__GNUC__)
+# define AlignOf(T) __alignof__(T)
+#else
+# error AlignOf not available for this compiler.
+#endif
+
+#if defined(_MSC_VER)
+# define force_inline __forceinline
+#elif defined(__clang__) || defined(__GNUC__)
+# define force_inline __attribute__((always_inline))
+#else
+# error force_inline not available for this compiler.
+#endif
 
 ////////////////////////////
 //- Helper Macros
@@ -46,14 +65,21 @@ typedef size_t    usize;
 #define ClampBot(a,b)  Max(a,b)
 #define Clamp(a,x,b)   (((x)<(a))?(a):(((x)>(b))?(b):(x)))
 #define AlignPow2(x,a) (((x)+(a)-1)&(~((a)-1)))
-#define OffsetPtr(p,o) (void*)((usize)(p) + (usize)(o))
+#define OffsetPtr(p,o) (void*)((uptr)(p) + (uptr)(o))
+
+#define MemoryCopy(d,s,c) memmove(d,s,c)
 
 ////////////////////////////
 //- Helper Global Constants
 
-static const u8  max_u8  = 0xff;
-static const u16 max_u16 = 0xffff;
-static const u32 max_u32 = 0xffffffff;
-static const u64 max_u64 = 0xffffffffffffffffllu;
+#define max_u8  (u8)0xff
+#define max_u16 (u16)0xffff
+#define max_u32 (u32)0xffffffff
+#define max_u64 (u64)0xffffffffffffffffllu
+
+////////////////////////////
+//- Helper Functions
+
+static inline Vector2 world_ToScreen(Vector2 v);
 
 #endif // HELPERS_H

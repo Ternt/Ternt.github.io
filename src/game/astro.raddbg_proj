@@ -1,0 +1,9 @@
+// raddbg 0.9.27 project file
+
+target:
+{
+  executable: "build/main.exe"
+  working_directory: build
+  enabled: 1
+  arguments: "800 800"
+}

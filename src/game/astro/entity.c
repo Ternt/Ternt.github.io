@@ -1,58 +1,125 @@
 // 2026-06-14
 
-static void entt_bufferInit(Arena *arena, u32 cap)
-{
-  g_entities.data = push_enttArray(arena, cap);
-  g_entities.cap = cap;
-  g_entities.count = 0;
+//
+// initialization
+//
 
-  for(u32 i = 0; i < cap; i += 1)
+static void ecs_init(void)
+{
+  Arena *arena = arena_alloc(ARENA_DEFAULT_CAP);
+  g_ecs_state = push_array(arena, ecs_State, 1);
+
+  // Initialize Entities Buffer.
+  g_ecs_state->free_count = ECS_MAX_ENTITY;
+  g_ecs_state->data_count = 0;
+
+  for(u16 i = 0; i < ECS_MAX_ENTITY; i += 1)
   {
-    g_entities.data[i] = NULL_ENTT;
+    g_ecs_state->entt_idx[i] = NULL_ENTITY;
+  }
+
+  // initialize in reverse so that the
+  // entity at idx position ECS_MAX_ENTITY 
+  // is the 0th index.
+  for(u16 i = ECS_MAX_ENTITY; i > 0; i -= 1)
+  {
+    u32 idx = ECS_MAX_ENTITY - i;
+    g_ecs_state->free_entt_idx[i - 1] = idx;
   }
 }
 
-static Entity entt_create(void)
+static void ecs_quit(void)
 {
-  b32 is_full = (g_entities.count >= g_entities.cap);
-  Entity result = (is_full*NULL_ENTT) + ((!is_full)*g_entities.count);
-  g_entities.count += (is_full*1);
+  arena_release(g_ecs_state->arena);
+}
+
+
+//
+// entity creation/destruction
+//
+
+static ecs_Entity ecs_createEntity(void)
+{
+  ecs_Entity result = NULL_ENTITY;
+  if(g_ecs_state->free_count > 0)
+  {
+    g_ecs_state->free_count -= 1;
+    u32 free_idx = g_ecs_state->free_count;
+    result = g_ecs_state->free_entt_idx[free_idx];
+    g_ecs_state->free_entt_idx[free_idx] = max_u16;
+
+    u32 data_idx = g_ecs_state->data_count;
+    g_ecs_state->entt_idx[data_idx] = result;
+    g_ecs_state->data_count += 1;
+  }
   return result;
 }
 
-static void entt_destroy(Entity id)
+static void ecs_destroyEntity(ecs_Entity id)
 {
-  // FIX: Entity destruction and allocation
-  // isn't as simple as I thought. Currently,
-  // entity creation is done by g_entities.count,
-  // this does not account for the fact that 
-  // entity destruction is not linear. An entity
-  // with any id can be destroyed at any given
-  // time. This means we need some extra book-
-  // keeping information. Perhaps we can split
-  // the EntityBuffer into chunks. Where each
-  // chunk has two 32-bit bitmask. One to
-  // determine the chunk id, and the other to
-  // determine entity location in that chunk.
-  //
-  // Or we can use a freelist. 
-  g_entities.data[id] = NULL_ENTT;
-  g_entities.count -= 1;
+  g_ecs_state->entt_idx[id] = NULL_ENTITY;
+  u32 idx = g_ecs_state->free_count;
+  g_ecs_state->free_entt_idx[idx] = id;
+  g_ecs_state->free_count += 1;
+  g_ecs_state->data_count -= 1;
 }
 
-static void entt_set_component(Entity id, ComponentType type, void *in)
-{
-  if(id = NULL_ENTT){return;}
 
+//
+// component helper functions
+//
+
+// NOTE: for now, it is a linear mapping.
+static u32 ecs_mapEntityToComponent(ecs_Entity id, ecs_ComponentType type)
+{
+  u32 result = 0;
   switch(type)
   {
-    case ComponentType_Transform: 
-    {
-      Transform *transform = &(g_transforms[id]);
-      Transform data = *(Transform*)in;
-      transform->translation = data.translation;
-      transform->rotation = data.rotation;
-      transform->scale = data.scale;
+    case ecs_ComponentType_Transform: {
+      result = id;
     } break;
   }
+  return result;
 }
+
+
+//
+// component setter functions
+//
+
+static void ecs_setTransform_ex(ecs_Entity id, ecs_Transform *in)
+{
+  u32 component_id = ecs_mapEntityToComponent(id, ecs_ComponentType_Transform);
+  ecs_Transform *t = &g_ecs_state->transforms[component_id];
+  MemoryCopy(t, in, sizeof(ecs_Transform));
+}
+
+static void ecs_setGeometry_ex(ecs_Entity id, ecs_Geometry *in)
+{
+  u32 component_id = ecs_mapEntityToComponent(id, ecs_ComponentType_Geometry);
+  ecs_Geometry *t = &g_ecs_state->geometries[component_id];
+  MemoryCopy(t, in, sizeof(ecs_Geometry));
+}
+
+
+//
+// component getter functions
+//
+
+static void *ecs_getComponent(ecs_Entity id, ecs_ComponentType type)
+{
+  void *result = 0;
+  u32 component_id = ecs_mapEntityToComponent(id, ecs_ComponentType_Geometry);
+  switch(type)
+  {
+    case ecs_ComponentType_Transform: {
+      result = &(g_ecs_state->transforms[component_id]);
+    } break;
+
+    case ecs_ComponentType_Geometry: {
+      result = &(g_ecs_state->geometries[component_id]);
+    } break;
+  }
+  return result;
+}
+

@@ -1,21 +1,11 @@
-// 2026-06-13
-//
-// TODO list (features, improvements, and bug fixes)
-// -------------------------------------------------
-// [ ] Resize window when resizing occurs in the 
-//     browser. Currently window sizing is set 
-//     only on startup. 
-// [ ] Better memory allocator for model geometry
-//     data.
-// [ ] Revisit entity creation and destruction
-//     logic. 
-
+// 2026-06-15
 
 ////////////////////////////
 //- Third Party Includes
 
 #include "raylib/raylib.h"
-#include <emscripten/emscripten.h>
+#include "raylib/raymath.h"
+#include "raylib/rlgl.h"
 
 ////////////////////////////
 //- Game Includes
@@ -23,48 +13,107 @@
 #include "helpers.h"
 #include "arena.h"
 #include "entity.h"
-// #include "physics.h"
+#include "game.h"
 
 #include "helpers.c"
 #include "arena.c"
 #include "entity.c"
-// #include "physics.c"
+#include "game.c"
+
+////////////////////////////
+//- Game Constants
 
 ////////////////////////////
 //- Game Globals
 
-Arena *g_arena = 0;              // general memory pool
-Arena *g_geo_pool = 0;           // geometry memory pool
-usize  g_geo_pool_size = KB(16); // memory pool size
-Entity entt_player = NULL_ENTT;  // player entity
+Arena*     g_arena  = 0;
+ecs_Entity g_player = NULL_ENTITY;
+Camera2D   g_camera = {0};
 
 ////////////////////////////
 //- Game Loop Pipeline
 
-static void 
-game_processEvents(void)
+static inline void 
+game_updatePhysics(void)
 {
 }
 
-static void 
+static inline void 
 game_updateState(void)
 {
 }
 
-static void 
+static inline void 
 game_drawFrame(void)
 {
   BeginDrawing();
   ClearBackground(BLACK);
-  EndDrawing();
-}
+  BeginMode2D(g_camera);
+    for(u32 i = 0; i < g_ecs_state->data_count; i += 1)
+    {
+      ecs_Entity entt_id = g_ecs_state->entt_idx[i];
+      ecs_Geometry *geo = ecs_getGeometry(entt_id);
+      switch(geo->type)
+      {
+///////// Draw Circle /////////////////////////////////////////////////////////////////////////////////////////////////
+        case ecs_ShapeType_Circle: {
+          ecs_Transform *tn = ecs_getTransform(entt_id);
+          Vector3 p = tn->p;
+          Vector4 r = tn->r;
+          Vector3 s = tn->s;
 
-static void 
-game_mainLoop(void)
-{
-  game_processEvents();
-  game_updateState();
-  game_drawFrame();
+          rlPushMatrix();
+            rlTranslatef(p.x, p.y, p.z);
+            rlScalef(s.x, s.y, s.z);
+            ecs_Circle circle = geo->shape.circle;
+            DrawCircleV(world_toScreen(circle.center), 
+                        circle.radius, 
+                        circle.color);
+          rlPopMatrix();
+        } break;
+
+///////// Draw Triangle ///////////////////////////////////////////////////////////////////////////////////////////////
+        case ecs_ShapeType_Triangle: {
+          ecs_Transform *tn = ecs_getTransform(entt_id);
+          Vector3 p = tn->p;
+          Vector4 r = tn->r;
+          Vector3 s = tn->s;
+
+          rlPushMatrix();
+            rlTranslatef(p.x, p.y, p.z);
+            rlScalef(s.x, s.y, s.z);
+            ecs_Triangle tri = geo->shape.tri;
+            DrawTriangle(world_toScreen(tri.v1), 
+                         world_toScreen(tri.v2), 
+                         world_toScreen(tri.v3), 
+                         tri.color);
+          rlPopMatrix();
+        } break;
+
+///////// Draw Rectangle //////////////////////////////////////////////////////////////////////////////////////////////
+        case ecs_ShapeType_Rectangle: {
+          ecs_Transform *tn = ecs_getTransform(entt_id);
+          Vector3 p = tn->p;
+          Vector4 r = tn->r;
+          Vector3 s = tn->s;
+
+          rlPushMatrix();
+            rlTranslatef(p.x, p.y, p.z);
+            rlScalef(s.x, s.y, s.z);
+            ecs_Rectangle rect = geo->shape.rect;
+            DrawRectangleV(world_toScreen(rect.pos), 
+                           world_toScreen(rect.size), 
+                           rect.color);
+          rlPopMatrix();
+        } break;
+      }
+    }
+  EndMode2D();
+
+///////// Draw UI /////////////////////////////////////////////////////////////////////////////////////////////////////
+  BeginUI();
+  EndUI();
+  EndDrawing();
 }
 
 ////////////////////////////
@@ -72,22 +121,34 @@ game_mainLoop(void)
 
 int main(int argc, char *argv[])
 {
+  ecs_init();
   g_arena = arena_alloc(ARENA_DEFAULT_CAP);
-  g_geo_pool = arena_alloc(g_geo_pool_size);
   {
     // initialize window
     int w = atoi(argv[1]);
     int h = atoi(argv[2]);
     InitWindow(w, h, "raylib wasm demo");
 
-    entt_bufferInit(g_arena, ENTT_MAX);
+    // player entity
+    ecs_Entity g_player = ecs_createEntity();
+    ecs_setGeometry(g_player);
+    ecs_setTransform(g_player);
 
-    // spaceship player entity
-    entt_player = entt_create();
+    w = GetScreenWidth();
+    h = GetScreenHeight();
+    float zoom = Min(w, h);
+    Vector3 pos = ecs_getTransform(g_player)->p;
 
-    // set main game loop
-    emscripten_set_main_loop(game_mainLoop, 0, 1);
+    // initialize camera
+    g_camera.target   = (Vector2){ pos.x, pos.y };
+    g_camera.offset   = (Vector2){ w/2.f, h/2.f };
+    g_camera.zoom     = 0.5f*zoom;
+    g_camera.rotation = 0.0f;
+
+    // main game loop
+    game_mainLoop();
   }
   arena_release(g_arena);
-  arena_release(g_geo_pool);
+  ecs_quit();
 }
+
