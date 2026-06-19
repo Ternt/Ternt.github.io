@@ -14,16 +14,40 @@
 #endif
 
 ////////////////////////////
+//- Game Mega Struct
+
+typedef struct Game {
+  Font defaultFont;
+  Camera2D camera2D;
+  f32 cameraZoom;
+} Game;
+
+////////////////////////////
+//- Game Globals
+
+static Game GAME = zero_struct;
+
+////////////////////////////
+//- Game World Functions
+
+// helpers
+static void Game_HandleZoomAndDrag(void);
+static void Game_DrawGrid(f32 w, f32 h, f32 cell_size, Color color);
+
+////////////////////////////
 //- Application Structure Functions
 
 // defined by the user
-static inline void game_updatePhysics(void);
-static inline void game_updateState(void);
-static inline void game_drawFrame(void);
+static inline void Game_UpdatePhysics(void);
+static inline void Game_UpdateState(void);
+static inline void Game_DrawWorld(void);
+static inline void Game_DrawUI(void);
+static inline void Game_DrawDebug(void);
+static void Game_EntryPoint(int argc, char *argv[]);
 
-// internal, not-user defined
-static force_inline void game_tick(void);
-static force_inline void game_mainLoop(void);
+// main loop, internal, not-user defined
+static force_inline void Game_Tick(void);
+static force_inline void Game_MainLoop(void);
 
 // ui marker macros (does nothing, code decoration)
 #define BeginUI() (void)(0)

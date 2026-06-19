@@ -12,6 +12,12 @@ typedef struct Arena {
   u32 pos;
 } Arena;
 
+// Temp Type
+typedef struct Temp {
+  Arena *arena;
+  u32 pos;
+} Temp;
+
 ////////////////////////////
 //- Arena Constants
 
@@ -22,17 +28,19 @@ typedef struct Arena {
 //- Arena Functions
 
 // core arena operations
-static Arena *arena_alloc(u32 cap);
-static void   arena_release(Arena *arena);
-static void  *arena_push(Arena *arena, u32 size, u32 align);
-static void   arena_popTo(Arena *arena, u32 pos);
-static void   arena_pop(Arena *arena, u32 amt);
-static void   arena_clear(Arena* arena);
+static Arena *ArenaAlloc(u32 cap);
+static void   ArenaRelease(Arena *arena);
+static void  *ArenaPush(Arena *arena, u32 size, u32 align);
+static void   ArenaPopTo(Arena *arena, u32 pos);
+static void   ArenaPop(Arena *arena, u32 amt);
+static void   ArenaClear(Arena *arena);
+static Temp   TempBegin(Arena *arena);
+static void   TempEnd(Temp temp);
 
 // function-like helper macros
-#define push_arrayAligned(a,T,c,align) arena_push(a,(c)*sizeof(T),align)
-#define push_array(a,T,c) push_arrayAligned(a,T,c,Max(8,AlignOf(T)))
-#define push_structAligned(a,T,align) arena_push(a,sizeof(T),align)
-#define push_struct(a,T) push_arrayAligned(a,T,Max(8,AlignOf(T)))
+#define PushArrayAligned(a,T,c,align) ArenaPush(a,(c)*sizeof(T),align)
+#define PushArray(a,T,c) PushArrayAligned(a,T,c,Max(8,AlignOf(T)))
+#define PushStructAligned(a,T,align) ArenaPush(a,sizeof(T),align)
+#define PushStruct(a,T) PushStructAligned(a,T,Max(8,AlignOf(T)))
 
 #endif // ARENA_H

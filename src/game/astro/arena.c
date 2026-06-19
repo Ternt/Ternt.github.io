@@ -1,7 +1,7 @@
 // 2026-06-14
 
 static Arena *
-arena_alloc(u32 cap)
+ArenaAlloc(u32 cap)
 {
   Arena *result = (Arena*)malloc(cap);
   result->pos = ARENA_HEADER_SIZE;
@@ -10,13 +10,13 @@ arena_alloc(u32 cap)
 }
 
 static void
-arena_release(Arena *arena)
+ArenaRelease(Arena *arena)
 {
   free(arena);
 }
 
 static void *
-arena_push(Arena *arena, u32 size, u32 align)
+ArenaPush(Arena *arena, u32 size, u32 align)
 {
   u32 pos_aln = AlignPow2(arena->pos, align);
   u32 pos_new = pos_aln + size;
@@ -34,14 +34,36 @@ arena_push(Arena *arena, u32 size, u32 align)
 }
 
 static void
-arena_pop_to(Arena *arena, u32 pos)
+ArenaPopTo(Arena *arena, u32 pos)
 {
+  pos = ClampTop(pos, arena->cap);
 }
 
-static void arena_pop(Arena *arena, u32 amt)
+static void ArenaPop(Arena *arena, u32 amt)
 {
+  u32 old_amt = arena->pos;
+  u32 new_amt = old_amt;
+  if(amt < old_amt)
+  {
+    new_amt -= amt;
+  }
+  ArenaPopTo(arena, new_amt);
 }
 
-static void arena_clear(Arena* arena)
+static void ArenaClear(Arena* arena)
 {
+  ArenaPopTo(arena, 0);
 }
+
+static Temp TempBegin(Arena *arena)
+{
+  Temp temp = {arena, arena->pos};
+  return temp;
+}
+
+static void TempEnd(Temp temp)
+{
+  Arena *arena = temp.arena;
+  ArenaPopTo(arena, arena->pos);
+}
+
