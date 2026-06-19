@@ -22,7 +22,7 @@ typedef struct Temp {
 //- Arena Constants
 
 #define ARENA_HEADER_SIZE Clamp(32, sizeof(Arena), 64)
-#define ARENA_DEFAULT_CAP MB(2)
+#define ARENA_DEFAULT_CAP MB(4)
 
 ////////////////////////////
 //- Arena Functions

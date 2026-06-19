@@ -225,9 +225,9 @@ static void R_Init(void)
 
   glGenVertexArrays(1, &RENDER->vao);
   glBindVertexArray(RENDER->vao);
-  glGenBuffers(1, &RENDER->vbo_64kb);
-  glBindBuffer(GL_ARRAY_BUFFER, RENDER->vbo_64kb);
-  glBufferData(GL_ARRAY_BUFFER, KB(64), 0, GL_DYNAMIC_DRAW);
+  glGenBuffers(1, &RENDER->vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, RENDER->vbo);
+  glBufferData(GL_ARRAY_BUFFER, MB(2), 0, GL_DYNAMIC_DRAW);
 }
 
 static void R_Quit(void)
@@ -266,7 +266,7 @@ static void R_DrawAll(R_PassArray *passes)
             R_BatchList *batches = &n->batches;
             {
               u32 offset = 0;
-              glBindBuffer(GL_ARRAY_BUFFER, RENDER->vbo_64kb);
+              glBindBuffer(GL_ARRAY_BUFFER, RENDER->vbo);
               for(R_BatchNode *batchNode = batches->first; batchNode != null; batchNode = batchNode->next)
               {
                 glBufferSubData(GL_ARRAY_BUFFER, offset, batchNode->v.batch_size, batchNode->v.bytes);

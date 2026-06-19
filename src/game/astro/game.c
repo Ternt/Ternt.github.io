@@ -56,6 +56,7 @@ static void Game_DrawOrigin(Color color)
 
 static force_inline void Game_Tick(void)
 {
+  ProfBegin("Game_Tick");
   Game_UpdatePhysics();
   Game_UpdateState();
 
@@ -65,6 +66,9 @@ static force_inline void Game_Tick(void)
     Game_DrawUI();
     Game_DrawDebug();
   EndDrawing();
+
+  ProfEnd();
+  TracyCFrameMark;
 }
 
 static force_inline void Game_MainLoop(void)

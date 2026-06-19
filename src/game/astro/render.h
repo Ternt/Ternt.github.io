@@ -119,7 +119,7 @@ typedef struct R_AttribsArray {
 typedef struct R_RenderState {
   Arena *arena;
   GLuint vao;
-  GLuint vbo_64kb;
+  GLuint vbo;
   GLuint shaders[R_PassType_COUNT];
 } R_RenderState;
 

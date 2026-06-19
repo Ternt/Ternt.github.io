@@ -25,6 +25,7 @@ ArenaPush(Arena *arena, u32 size, u32 align)
   {
     result = OffsetPtr(arena, pos_aln);
     arena->pos = pos_new;
+    MemoryZero(result, size);
   }
   else
   {
@@ -36,7 +37,8 @@ ArenaPush(Arena *arena, u32 size, u32 align)
 static void
 ArenaPopTo(Arena *arena, u32 pos)
 {
-  pos = ClampTop(pos, arena->cap);
+  u32 new_pos = Clamp(ARENA_HEADER_SIZE, pos, arena->cap);
+  arena->pos = new_pos;
 }
 
 static void ArenaPop(Arena *arena, u32 amt)
@@ -64,6 +66,6 @@ static Temp TempBegin(Arena *arena)
 static void TempEnd(Temp temp)
 {
   Arena *arena = temp.arena;
-  ArenaPopTo(arena, arena->pos);
+  ArenaPopTo(arena, temp.pos);
 }
 
