@@ -17,6 +17,7 @@
 //- Game Mega Struct
 
 typedef struct Game {
+  Arena *arena;
   Font defaultFont;
   Camera2D camera2D;
   f32 cameraZoom;

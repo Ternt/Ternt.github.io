@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
   // camera values
   w = GetScreenWidth();
   h = GetScreenHeight();
-  GAME.cameraZoom = 1.0f;
+  GAME.cameraZoom = Min(w,h)/4.0f;
 
   // initialize camera
   GAME.camera2D.target   = (Vector2){0, 0};
@@ -97,10 +97,15 @@ int main(int argc, char *argv[])
   GAME.camera2D.zoom     = GAME.cameraZoom;
   GAME.camera2D.rotation = 0.0f;
 
-  R_Init();
-  Game_EntryPoint(argc, argv);
-  Game_MainLoop();
-  R_Quit();
+  // game entry point
+  GAME.arena = ArenaAlloc(ARENA_DEFAULT_CAP);
+  {
+    R_Init();
+    Game_EntryPoint(argc, argv);
+    Game_MainLoop();
+    R_Quit();
+  }
+  ArenaRelease(GAME.arena);
 
   // unload font
   UnloadFont(GAME.defaultFont);

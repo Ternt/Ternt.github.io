@@ -15,7 +15,8 @@ const char *r_ps_shader_src_path[R_PassType_COUNT] =
 
 const R_Attribs r_geo_shader_input_attribs[] = 
 {
-  { 0, "in_pos", GL_FLOAT, 2 },
+  { 0, "in_pos",   GL_FLOAT, 2 },
+  { 1, "in_model", GL_FLOAT, 4 },
 };
 
 const R_Attribs r_geo_shader_output_attribs[] = 
@@ -37,8 +38,52 @@ const R_AttribsArray r_shader_output_attribs[R_PassType_COUNT] =
 ////////////////////////////
 //- Render Functions
 
-static R_Handle R_BufferFromSize(u32 size)
+static GLenum R_GL_BufferToVBOType(R_BufferType type)
 {
+  GLenum result = 0;
+  switch(type)
+  {
+    case R_BufferType_Static:
+    {
+      result = GL_STATIC_DRAW;
+    } break;
+    case R_BufferType_Dynamic:
+    {
+      result = GL_DYNAMIC_DRAW;
+    } break;
+    case R_BufferType_Stream:
+    {
+      result = GL_STREAM_DRAW;
+    } break;
+  }
+  return result;
+}
+
+static GLuint
+R_AllocBuffer(R_BufferType type, u32 size, void *data)
+{
+  GLuint buffer = 0;
+  glGenBuffers(1, &buffer);
+  glBindBuffer(GL_ARRAY_BUFFER, buffer);
+  glBufferData(GL_ARRAY_BUFFER, size, data, R_GL_BufferToVBOType(type));
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  return buffer;
+}
+
+static void
+R_ReleaseBuffer(GLuint buffer)
+{
+  glDeleteBuffers(1, &buffer);
+}
+
+static GLuint R_AllocStaticBuffer(GLuint handle, u32 size, void *data)
+{
+  GLuint result = handle;
+  if(result == 0)
+  {
+    result = R_AllocBuffer(R_BufferType_Static, size, data);
+  }
+  return result;
 }
 
 static R_PassArray R_MakePassArray(void)
@@ -153,7 +198,7 @@ static void R_Init(void)
     R_AttribsArray inputs = r_shader_input_attribs[k];
     for(u32 i = 0; i < inputs.count; i += 1)
     {
-      glBindAttribLocation(program, inputs.data[i].index, inputs.data[i].name);
+      glBindAttribLocation(program, inputs.v[i].index, inputs.v[i].name);
     }
 
     // link program and check for errors.
@@ -175,7 +220,7 @@ static void R_Init(void)
         TraceLog(LOG_INFO, "SHADER: [ID %d] Program shader loaded successfully", program);
       }
     }
-    RENDER->program = program;
+    RENDER->shaders[k] = program;
   }
 
   glGenVertexArrays(1, &RENDER->vao);
@@ -198,51 +243,58 @@ static void R_DrawAll(R_PassArray *passes)
     switch(pass->type)
     {
       case R_PassType_Geo2D: {
+        GLuint program = RENDER->shaders[R_PassType_Geo2D];
         rlDrawRenderBatchActive();
         glBindVertexArray(RENDER->vao);
-        glUseProgram(RENDER->shaders[R_PassType_Geo2D]);
+        glUseProgram(program);
         {
-          R_PassParams_Geo2D params = pass->paramsGeo2D;
-          R_BatchGroup2DList groups = params.batchGroup;
-          for(R_BatchGroup2DNode *n = groups.first; n; n = n->next)
+          R_PassParams_Geo2D *params = &pass->paramsGeo2D;
+          R_BatchGroup2DList *groups = &params->batchGroups;
+          for(R_BatchGroup2DNode *n = groups->first; n != null; n = n->next)
           {
-            // // upload data to buffer.
-            // {
-            //   u32 offset = 0;
-            //   glBindBuffer(GL_ARRAY_BUFFER, RENDER->vbo_64kb);
-            //   for(R_BatchNode *n = batches->first; n; n = n->next)
-            //   {
-            //     glBufferSubData(GL_ARRAY_BUFFER, offset, n->v.batch_size, n->v.bytes);
-            //     offset += n->v.batch_size;
-            //   }
-            // }
-            //
-            // // set input vertex attributes.
-            // for(u32 i = 0; i < inputs.count; i += 1)
-            // {
-            //   glEnableVertexAttribArray(inputs.data[i].index);
-            //   glVertexAttribPointer(inputs.data[i].index, inputs.data[i].size, inputs.data[i].type, GL_FALSE, sizeof(Vector2), null);
-            // }
-            //
-            // // set shader uniforms.
-            // {
-            //   int w = GetScreenWidth();
-            //   int h = GetScreenHeight();
-            //
-            //   Matrix model = params.;
-            //   u32 model_loc = glGetUniformLocation(RENDER->program, "model");
-            //   glUniformMatrix4fv(model_loc, 1, GL_FALSE, MatrixToFloat(model));
-            //
-            //   Matrix view = GetCameraMatrix2D(g_camera);
-            //   u32 view_loc = glGetUniformLocation(RENDER->program, "view");
-            //   glUniformMatrix4fv(view_loc, 1, GL_FALSE, MatrixToFloat(view));
-            //
-            //   Matrix proj = MatrixOrtho(0, w, h, 0, 0.0f, 10.0f);
-            //   u32 proj_loc = glGetUniformLocation(RENDER->program, "proj");
-            //   glUniformMatrix4fv(proj_loc, 1, GL_FALSE, MatrixToFloat(proj));
+            R_AttribsArray inputs = r_shader_input_attribs[R_PassType_Geo2D];
+
+            // bind static buffer and set vertex attribs
+            glBindBuffer(GL_ARRAY_BUFFER, n->params.meshVertices);
+            {
+              glEnableVertexAttribArray(inputs.v[0].index);
+              glVertexAttribDivisor(inputs.v[0].index, 0);
+              glVertexAttribPointer(inputs.v[0].index, inputs.v[0].count, inputs.v[0].type, GL_FALSE, sizeof(Vector2), null);
             }
 
-            // glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, sides, ngons_array->count);
+            // stream dynamic data to buffer (per-instance data).
+            R_BatchList *batches = &n->batches;
+            {
+              u32 offset = 0;
+              glBindBuffer(GL_ARRAY_BUFFER, RENDER->vbo_64kb);
+              for(R_BatchNode *batchNode = batches->first; batchNode != null; batchNode = batchNode->next)
+              {
+                glBufferSubData(GL_ARRAY_BUFFER, offset, batchNode->v.batch_size, batchNode->v.bytes);
+                offset += batchNode->v.batch_size;
+              }
+            } 
+
+            // set model matrix attribs
+            for(u32 col = 0; col < 4; col += 1)
+            {
+              GLuint loc = inputs.v[1].index + col; // base location (1) + column offset
+              glEnableVertexAttribArray(loc);
+              glVertexAttribDivisor(loc, 1);
+              glVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, sizeof(R_Hull2DInst), (void*)(sizeof(f32) * 4 * col));
+            }
+
+            // set shader uniforms.
+            {
+              u32 view_loc = glGetUniformLocation(program, "u_view");
+              glUniformMatrix4fv(view_loc, 1, GL_FALSE, MatrixToFloat(params->view));
+
+              u32 proj_loc = glGetUniformLocation(program, "u_proj");
+              glUniformMatrix4fv(proj_loc, 1, GL_FALSE, MatrixToFloat(params->proj));
+            }
+
+            u32 vertCount = n->params.vertCount;
+            u32 instCount = batches->batch_total_size / batches->inst_size;
+            glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, vertCount, instCount);
           }
         }
         glUseProgram(0);

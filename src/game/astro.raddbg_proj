@@ -5,20 +5,20 @@ target:
   executable: "build/main.exe"
   working_directory: astro
   arguments: "800 800"
-  entry_point: main
+  entry_point: Game_EntryPoint
 }
 target:
 {
   executable: "build/test_quadtree.exe"
   working_directory: build
   arguments: "800 800"
-  entry_point: main
+  entry_point: Game_EntryPoint
 }
 target:
 {
   executable: "build/test_physics.exe"
   working_directory: build
-  entry_point: main
+  entry_point: Game_EntryPoint
   arguments: "1000 1000"
   enabled: 0
 }
@@ -27,6 +27,6 @@ target:
   executable: "build/test_custom_renderer.exe"
   working_directory: build
   enabled: 1
-  entry_point: game_entryPoint
   arguments: "1000 800"
+  entry_point: Game_EntryPoint
 }

@@ -1,14 +1,23 @@
 // 2026-06-17
+//
+// An immediate mode rendering library.
+// Resources are created at the start of
+// a frame and destroyed at the end of a
+// frame. This provides alot of flexibility,
+// allowing things to dynamically change.
 
 #ifndef RENDER_H
 #define RENDER_H
 
 ////////////////////////////
-//- Render Resource
+//- Render Enumerations
 
-typedef struct R_Handle {
-  u64 v[0];
-} R_Handle;
+typedef enum R_BufferType {
+  R_BufferType_Static,
+  R_BufferType_Dynamic,
+  R_BufferType_Stream,
+  R_BufferType_COUNT,
+} R_BufferType;
 
 ////////////////////////////
 //- Batch Instance Type Definitions
@@ -34,7 +43,8 @@ typedef struct R_BatchList {
 } R_BatchList;
 
 typedef struct R_BatchGroup2DParams {
-  R_Handle meshVertices;
+  GLuint meshVertices;
+  u32 vertCount;
 } R_BatchGroup2DParams;
 
 typedef struct R_BatchGroup2DNode R_BatchGroup2DNode;
@@ -51,6 +61,13 @@ typedef struct R_BatchGroup2DList {
 } R_BatchGroup2DList;
 
 ////////////////////////////
+//- Instance Type Definitions
+
+typedef struct R_Hull2DInst {
+  Matrix model;
+} R_Hull2DInst;
+
+////////////////////////////
 //- Render Pass Type Definitions
 
 typedef s32 R_PassType;
@@ -64,7 +81,7 @@ enum
 typedef struct R_PassParams_Geo2D {
   Matrix view;
   Matrix proj;
-  R_BatchGroup2DList batchGroup;
+  R_BatchGroup2DList batchGroups;
 } R_PassParams_Geo2D;
 
 typedef struct R_Pass {
@@ -88,11 +105,11 @@ typedef struct R_Attribs {
   GLuint index;
   char *name;
   GLenum type;
-  GLsizei size;
+  GLsizei count;
 } R_Attribs;
 
 typedef struct R_AttribsArray {
-  const R_Attribs *data; 
+  const R_Attribs *v; 
   u32 count;
 } R_AttribsArray;
 
@@ -114,7 +131,11 @@ R_RenderState *RENDER = null;
 ////////////////////////////
 //- Render Functions
 
-static R_Handle R_BufferFromSize(u32 size);
+// resource alloc/release functions
+static GLuint R_AllocBuffer(R_BufferType type, u32 size, void *data);
+static void R_ReleaseBuffer(GLuint buffer);
+
+// pipeline builder functions
 static R_Pass *R_PushPass(R_PassArray *passes, R_PassType type);
 static R_BatchList R_MakeBatchList(u32 inst_size);
 static void *R_PushBatchInst(Arena *arena, R_BatchList *list, u32 batch_inst_cap);
