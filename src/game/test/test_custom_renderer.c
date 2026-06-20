@@ -46,12 +46,14 @@
 #include "arena.h"
 #include "render.h"
 #include "geometry.h"
+#include "quadtree.h"
 #include "game.h"
 
 #include "helpers.c"
 #include "arena.c"
 #include "render.c"
 #include "geometry.c"
+#include "quadtree.c"
 #include "game.c"
 
 ////////////////////////////
@@ -60,9 +62,12 @@
 GLuint      g_hexBuffer = 0;
 NGon        g_hexShape = zero_struct;
 Transform*  g_hexTransforms = null;
-u32         g_hexInstCount = 1024;
-f32         g_worldBoundX = 1000.0f;
-f32         g_worldBoundY = 1000.0f;
+u32         g_hexInstCount = 32;
+
+f32         g_worldBoundX = 200.0f;
+f32         g_worldBoundY = 200.0f;
+Qd_Tree     g_quadTree = zero_struct;
+
 R_PassArray g_passes = zero_struct;
 
 ////////////////////////////
@@ -80,6 +85,10 @@ Game_UpdateState(void)
 {
   ProfBegin("Game_UpdateState");
   Game_HandleZoomAndDrag();
+  {
+    ProfBegin("Update Tree");
+    ProfEnd();
+  }
   ProfEnd();
 }
 
@@ -91,8 +100,8 @@ Game_DrawWorld(void)
     // Initialize Geo2D Params
     int w = GetScreenWidth();
     int h = GetScreenHeight();
-    pass->paramsGeo2D.view = GetCameraMatrix2D(GAME.camera2D);
-    pass->paramsGeo2D.proj = MatrixOrtho(0, w, h, 0, 0.0f, 10.0f);
+    pass->params_geo_2d.view = GetCameraMatrix2D(GAME.camera_2d);
+    pass->params_geo_2d.proj = MatrixOrtho(0, w, h, 0, 0.0f, 10.0f);
   }
 
   ProfBegin("R_DrawAll");
@@ -115,9 +124,17 @@ Game_DrawDebug(void)
   u32   fps = GetFPS();
   if (InRange(fps, 15, 30)) fpsColor = ORANGE;
   if (InRange(fps,  0, 14)) fpsColor = RED;
-  DrawTextEx(GAME.defaultFont, TextFormat("%2i FPS", fps), (Vector2){0, 0}, 20, 1, fpsColor);
-  DrawTextEx(GAME.defaultFont, TextFormat("zoom %.3f\n", GAME.cameraZoom), (Vector2){0, 20}, 20, 1, WHITE);
-  DrawTextEx(GAME.defaultFont, TextFormat("count %d\n", g_hexInstCount), (Vector2){0, 40}, 20, 1, WHITE);
+  DrawTextEx(GAME.default_font, TextFormat("%2i FPS", fps), (Vector2){0, 0}, 20, 1, fpsColor);
+  DrawTextEx(GAME.default_font, TextFormat("zoom %.3f\n", GAME.camera_zoom), (Vector2){0, 20}, 20, 1, WHITE);
+  DrawTextEx(GAME.default_font, TextFormat("count %d\n", g_hexInstCount), (Vector2){0, 40}, 20, 1, WHITE);
+
+  BeginMode2D(GAME.camera_2d);
+  DrawRectangleLines(-g_worldBoundX/2.0f, 
+                     -g_worldBoundY/2.0f,
+                      g_worldBoundX, 
+                      g_worldBoundY, 
+                      LIME);
+  EndMode2D();
 
   ProfEnd();
 }
@@ -129,6 +146,7 @@ static void Game_EntryPoint(int argc, char *argv[])
 {
   g_hexShape = Geo_GenerateNGonConvex(GAME.arena, 6);
 
+  // initialize per-instance randomized transforms for hexagons
   g_hexTransforms = PushArray(GAME.arena, Transform, g_hexInstCount);
   for(u32 i = 0; i < g_hexInstCount; i += 1)
   {
@@ -141,48 +159,54 @@ static void Game_EntryPoint(int argc, char *argv[])
   }
 
   // build rendering pipeline
-  g_passes = R_MakePassArray();
-
-  // geo2d pass
-  R_Pass *pass = R_PushPass(&g_passes, R_PassType_Geo2D);
   {
-    // Initialize Geo2D Params
-    int w = GetScreenWidth();
-    int h = GetScreenHeight();
-    pass->paramsGeo2D.view = GetCameraMatrix2D(GAME.camera2D);
-    pass->paramsGeo2D.proj = MatrixOrtho(0, w, h, 0, 0.0f, 10.0f);
+    ProfBegin("Push Instances");
 
-    // Initialize a 2D batch group for hexagonal instances
+    g_passes = R_MakePassArray();
+
+    // geo2d pass
+    R_Pass *pass = R_PushPass(&g_passes, R_PassType_Geo2D);
     {
-      R_BatchGroup2DList *batchGroups = &pass->paramsGeo2D.batchGroups;
+      // Initialize Geo2D Params
+      int w = GetScreenWidth();
+      int h = GetScreenHeight();
+      pass->params_geo_2d.view = GetCameraMatrix2D(GAME.camera_2d);
+      pass->params_geo_2d.proj = MatrixOrtho(0, w, h, 0, 0.0f, 10.0f);
 
-      // Allocate a batch group
-      R_BatchGroup2DNode *node = PushArray(GAME.arena, R_BatchGroup2DNode, 1);
-      QueuePush(batchGroups->first, batchGroups->last, node);
-      batchGroups->node_count += 1;
+      R_BatchGroup2DList *batch_groups = &pass->params_geo_2d.batch_groups;
 
-      // Allocate static mesh vertices buffer.
-      u32 size = g_hexShape.count * sizeof(Vector2);
-      g_hexBuffer = R_AllocStaticBuffer(g_hexBuffer, size, g_hexShape.data);
-      node->params.meshVertices = g_hexBuffer;
-      node->params.vertCount = g_hexShape.count;
-
-      ProfBegin("Push Instances");
-
-      // Initialize group with N instances
-      node->batches = R_MakeBatchList(sizeof(R_Hull2DInst));
-      for(u32 i = 0; i < g_hexInstCount; i += 1)
+      // Initialize a 2D batch group for hexagonal instances
       {
-        R_Hull2DInst *hull_inst = (R_Hull2DInst*)R_PushBatchInst(GAME.arena, &node->batches, 32768);
-        Transform tr = g_hexTransforms[i];
-        Matrix model = MatrixIdentity();
-        model = MatrixMultiply(model, MatrixScale(tr.scale.x, tr.scale.y, 1.0f));
-        model = MatrixMultiply(model, MatrixTranslate(tr.translation.x, tr.translation.y, 0.0f));
-        hull_inst->model = MatrixTranspose(model);
-      }
+        // Allocate a batch group
+        R_BatchGroup2DNode *node = PushArray(GAME.arena, R_BatchGroup2DNode, 1);
+        QueuePush(batch_groups->first, batch_groups->last, node);
+        batch_groups->node_count += 1;
 
-      ProfEnd();
+        // Allocate static mesh vertices buffer.
+        u32 size = g_hexShape.count * sizeof(Vector2);
+        g_hexBuffer = R_AllocStaticBuffer(g_hexBuffer, size, g_hexShape.data);
+        node->params.mesh_vertices = g_hexBuffer;
+        node->params.vert_count = g_hexShape.count;
+
+
+        // Initialize group with N instances
+        node->batches = R_MakeBatchList(sizeof(R_Hull2DInst));
+        for(u32 i = 0; i < g_hexInstCount; i += 1)
+        {
+          R_Hull2DInst *hull_inst = (R_Hull2DInst*)R_PushBatchInst(GAME.arena, &node->batches, g_hexInstCount);
+          Transform tr = g_hexTransforms[i];
+          Matrix model = MatrixIdentity();
+          model = MatrixMultiply(model, MatrixScale(tr.scale.x, tr.scale.y, 1.0f));
+          model = MatrixMultiply(model, MatrixTranslate(tr.translation.x, tr.translation.y, 0.0f));
+          hull_inst->model = MatrixTranspose(model);
+        }
+      }
     }
+
+    ProfEnd();
   }
+
+  Vector2 bounds = {g_worldBoundX, g_worldBoundY};
+  g_quadTree = Qd_MakeTree(GAME.arena, bounds);
 }
 

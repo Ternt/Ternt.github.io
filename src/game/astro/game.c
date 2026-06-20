@@ -12,14 +12,14 @@ static void Game_HandleZoomAndDrag(void)
   if(IsMouseButtonDown(MOUSE_RIGHT_BUTTON))
   {
     Vector2 delta = GetMouseDelta();
-    GAME.camera2D.target = Vector2Subtract(GAME.camera2D.target, Vector2Scale(delta, 1.0f/GAME.cameraZoom));
+    GAME.camera_2d.target = Vector2Subtract(GAME.camera_2d.target, Vector2Scale(delta, 1.0f/GAME.camera_zoom));
   }
 
   // Handle zooming
   Vector2 wheel = GetMouseWheelMoveV();
-  GAME.cameraZoom += (GAME.cameraZoom * 0.1f * wheel.y);
-  GAME.cameraZoom = Max(GAME.cameraZoom, 0.01f);
-  GAME.camera2D.zoom = GAME.cameraZoom;
+  GAME.camera_zoom += (GAME.camera_zoom * 0.1f * wheel.y);
+  GAME.camera_zoom = Max(GAME.camera_zoom, 0.01f);
+  GAME.camera_2d.zoom = GAME.camera_zoom;
 }
 
 static void Game_DrawGrid(float w, float h, float cell_size, Color color)
@@ -89,18 +89,18 @@ int main(int argc, char *argv[])
 
   // load font
   const char *font_path = TextFormat("%s/%s", GetWorkingDirectory(), DEFAULT_FONT_PATH);
-  GAME.defaultFont = LoadFontEx(font_path, 32, 0, 0);
+  GAME.default_font = LoadFontEx(font_path, 32, 0, 0);
 
   // camera values
   w = GetScreenWidth();
   h = GetScreenHeight();
-  GAME.cameraZoom = Min(w,h)/4.0f;
+  GAME.camera_zoom = Min(w,h)/256.0f;
 
   // initialize camera
-  GAME.camera2D.target   = (Vector2){0, 0};
-  GAME.camera2D.offset   = (Vector2){w/2.f, h/2.f};
-  GAME.camera2D.zoom     = GAME.cameraZoom;
-  GAME.camera2D.rotation = 0.0f;
+  GAME.camera_2d.target   = (Vector2){0, 0};
+  GAME.camera_2d.offset   = (Vector2){w/2.f, h/2.f};
+  GAME.camera_2d.zoom     = GAME.camera_zoom;
+  GAME.camera_2d.rotation = 0.0f;
 
   // game entry point
   GAME.arena = ArenaAlloc(ARENA_DEFAULT_CAP);
@@ -113,5 +113,5 @@ int main(int argc, char *argv[])
   ArenaRelease(GAME.arena);
 
   // unload font
-  UnloadFont(GAME.defaultFont);
+  UnloadFont(GAME.default_font);
 }

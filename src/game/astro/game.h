@@ -18,9 +18,9 @@
 
 typedef struct Game {
   Arena *arena;
-  Font defaultFont;
-  Camera2D camera2D;
-  f32 cameraZoom;
+  Font default_font;
+  Camera2D camera_2d;
+  f32 camera_zoom;
 } Game;
 
 ////////////////////////////

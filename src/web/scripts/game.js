@@ -38,6 +38,10 @@ export default class Game
         console.log("[WEBGL] WebGL not supported.");
       }break;
     }
+
+    this.canvas.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+    });
   }
 
   initWasmGame(wasmLoaderScriptName = "game.js")

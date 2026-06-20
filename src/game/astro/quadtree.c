@@ -1,15 +1,15 @@
 // 2026-06-15
 
-static qud_Node *qud_traverseTreeDepth(qud_Node **parent)
+static Qd_Node *Qd_TraverseTreeDepth(Qd_Node **parent)
 {
 }
 
-static qud_Node *qud_allocNode(Arena *arena, qud_Tree *tree, qud_Node **parent)
+static Qd_Node *Qd_AllocNode(Arena *arena, Qd_Tree *tree, Qd_Node **parent)
 {
-  qud_Node *node = tree->free;
+  Qd_Node *node = tree->free;
   if(node == null)
   {
-    node = push_array(arena, qud_Node, 1);
+    node = PushArray(arena, Qd_Node, 1);
   }
   else
   {
@@ -21,18 +21,18 @@ static qud_Node *qud_allocNode(Arena *arena, qud_Tree *tree, qud_Node **parent)
   return node;
 }
 
-static void qud_releaseNode(qud_Tree *tree, qud_Node **parent, qud_Node **node)
+static void Qd_ReleaseNode(Qd_Tree *tree, Qd_Node **parent, Qd_Node **node)
 {
   DLLRemove((*parent)->first, (*parent)->last, *node);
   tree->node_count -= 1;
 }
 
-
-static qud_Tree *qud_initTree(Arena *arena)
+static Qd_Tree Qd_MakeTree(Arena *arena, Vector2 bounds)
 {
-  qud_Tree *tree = push_array(arena, qud_Tree, 1);
-  tree->root = push_array(arena, qud_Node, 1);
-  tree->node_count += 1;
+  Qd_Tree tree = zero_struct;
+  tree.root = PushArray(arena, Qd_Node, 1);
+  tree.node_count += 1;
+  tree.bounds = bounds;
   return tree;
 }
 

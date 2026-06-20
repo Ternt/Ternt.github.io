@@ -60,6 +60,6 @@ if not exist build mkdir build
 pushd build
 if "1"=="1" (
   %compile% ../test/test_custom_renderer.c %compile_link% gdi32.lib msvcrt.lib raylib.lib winmm.lib user32.lib shell32.lib %out%test_custom_renderer.exe 
-  call emcc ../test/test_custom_renderer.c -o astro.js -g -Wall -I../astro -I../includes -L../libs -lraylib.web -s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2 -w -DPLATFORM_WEB -DGRAPHICS_API_OPENGL_ES3 -s USE_GLFW=3 -s ALLOW_MEMORY_GROWTH=1 -s ASSERTIONS=1 -std=c99 --preload-file ../astro/fonts
+  REM call emcc ../test/test_custom_renderer.c -o astro.js -g -Wall -I../astro -I../includes -L../libs -lraylib.web -s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2 -w -DPLATFORM_WEB -DGRAPHICS_API_OPENGL_ES3 -s USE_GLFW=3 -s ALLOW_MEMORY_GROWTH=1 -s ASSERTIONS=1 -std=c99 --preload-file ../astro/fonts
 )
 popd build

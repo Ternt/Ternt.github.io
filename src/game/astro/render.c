@@ -239,14 +239,14 @@ static void R_DrawAll(R_PassArray *passes)
         glBindVertexArray(RENDER->vao);
         glUseProgram(program);
         {
-          R_PassParams_Geo2D *params = &pass->paramsGeo2D;
-          R_BatchGroup2DList *groups = &params->batchGroups;
+          R_PassParams_Geo2D *params = &pass->params_geo_2d;
+          R_BatchGroup2DList *groups = &params->batch_groups;
           for(R_BatchGroup2DNode *n = groups->first; n != null; n = n->next)
           {
             R_AttribsArray inputs = r_shader_input_attribs[R_PassType_Geo2D];
 
             // bind static buffer and set vertex attribs
-            glBindBuffer(GL_ARRAY_BUFFER, n->params.meshVertices);
+            glBindBuffer(GL_ARRAY_BUFFER, n->params.mesh_vertices);
             {
               glEnableVertexAttribArray(inputs.v[0].index);
               glVertexAttribDivisor(inputs.v[0].index, 0);
@@ -258,10 +258,10 @@ static void R_DrawAll(R_PassArray *passes)
             {
               u32 offset = 0;
               glBindBuffer(GL_ARRAY_BUFFER, RENDER->vbo);
-              for(R_BatchNode *batchNode = batches->first; batchNode != null; batchNode = batchNode->next)
+              for(R_BatchNode *batch_node = batches->first; batch_node != null; batch_node = batch_node->next)
               {
-                glBufferSubData(GL_ARRAY_BUFFER, offset, batchNode->v.batch_size, batchNode->v.bytes);
-                offset += batchNode->v.batch_size;
+                glBufferSubData(GL_ARRAY_BUFFER, offset, batch_node->v.batch_size, batch_node->v.bytes);
+                offset += batch_node->v.batch_size;
               }
             } 
 
@@ -283,9 +283,9 @@ static void R_DrawAll(R_PassArray *passes)
               glUniformMatrix4fv(proj_loc, 1, GL_FALSE, MatrixToFloat(params->proj));
             }
 
-            u32 vertCount = n->params.vertCount;
-            u32 instCount = batches->batch_total_size / batches->inst_size;
-            glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, vertCount, instCount);
+            u32 vert_count = n->params.vert_count;
+            u32 inst_count = batches->batch_total_size / batches->inst_size;
+            glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, vert_count, inst_count);
           }
         }
         glUseProgram(0);

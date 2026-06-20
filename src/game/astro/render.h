@@ -43,8 +43,8 @@ typedef struct R_BatchList {
 } R_BatchList;
 
 typedef struct R_BatchGroup2DParams {
-  GLuint meshVertices;
-  u32 vertCount;
+  GLuint mesh_vertices;
+  u32 vert_count;
 } R_BatchGroup2DParams;
 
 typedef struct R_BatchGroup2DNode R_BatchGroup2DNode;
@@ -81,7 +81,7 @@ enum
 typedef struct R_PassParams_Geo2D {
   Matrix view;
   Matrix proj;
-  R_BatchGroup2DList batchGroups;
+  R_BatchGroup2DList batch_groups;
 } R_PassParams_Geo2D;
 
 typedef struct R_Pass {
@@ -89,7 +89,7 @@ typedef struct R_Pass {
   union
   {
     void *params;
-    R_PassParams_Geo2D paramsGeo2D;
+    R_PassParams_Geo2D params_geo_2d;
   };
 } R_Pass;
 

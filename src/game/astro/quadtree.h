@@ -9,27 +9,28 @@
 /////////////////////////////
 //- Quad-Tree Type Definitions
 
-typedef struct qud_Node qud_Node;
-struct qud_Node {
-  qud_Node *parent;
-  qud_Node *first;
-  qud_Node *last;
-  qud_Node *next;
-  qud_Node *prev;
+typedef struct Qd_Node Qd_Node;
+struct Qd_Node {
+  Qd_Node *parent;
+  Qd_Node *first;
+  Qd_Node *last;
+  Qd_Node *next;
+  Qd_Node *prev;
 };
 
-typedef struct qud_Tree {
-  qud_Node *root;
-  qud_Node *free;
+typedef struct Qd_Tree {
+  Qd_Node *root;
+  Qd_Node *free;
   u32 node_count;
-} qud_Tree;
+  Vector2 bounds;
+} Qd_Tree;
 
 /////////////////////////////
 //- Quad-Tree Functions
 
-static qud_Node *qud_traverseTreeDepth(qud_Node **parent);
-static qud_Node *qud_allocNode(Arena *arena, qud_Tree *tree, qud_Node **parent);
-static void      qud_releaseNode(qud_Tree *tree, qud_Node **parent, qud_Node **node);
-static qud_Tree *qud_initTree(Arena *arena);
+static Qd_Node *Qd_TraverseTreeDepth(Qd_Node **parent);
+static Qd_Node *Qd_AllocNode(Arena *arena, Qd_Tree *tree, Qd_Node **parent);
+static void     Qd_ReleaseNode(Qd_Tree *tree, Qd_Node **parent, Qd_Node **node);
+static Qd_Tree  Qd_MakeTree(Arena *arena, Vector2 bounds);
 
 #endif // QUADTREE_H
