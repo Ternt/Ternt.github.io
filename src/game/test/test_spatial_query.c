@@ -1,4 +1,5 @@
 // 2026-06-17
+//
 // TODO list (features, improvements, and bug fixes)
 // -------------------------------------------------
 // [ ] Resize window when resizing occurs in the 
@@ -45,12 +46,14 @@
 #include "arena.h"
 #include "render.h"
 #include "geometry.h"
+#include "query.h"
 #include "game.h"
 
 #include "helpers.c"
 #include "arena.c"
 #include "render.c"
 #include "geometry.c"
+#include "query.c"
 #include "game.c"
 
 ////////////////////////////
@@ -63,6 +66,7 @@ u32         g_hexInstCount = 32;
 
 f32         g_worldBoundX = 200.0f;
 f32         g_worldBoundY = 200.0f;
+Qre_Ctx     g_queryCtx = zero_struct;
 
 R_PassArray g_passes = zero_struct;
 
@@ -201,5 +205,8 @@ static void Game_EntryPoint(int argc, char *argv[])
 
     ProfEnd();
   }
+
+  Vector2 bounds = {g_worldBoundX, g_worldBoundY};
+  g_queryCtx = Qre_MakeContext(GAME.arena, bounds);
 }
 
