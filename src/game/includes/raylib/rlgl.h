@@ -1,3 +1,5 @@
+// Copyright (c) 2013-2026 Ramon Santamaria (@raysan5)
+
 /**********************************************************************************************
 *
 *   rlgl v6.0 - A multi-OpenGL abstraction layer with an immediate-mode style API

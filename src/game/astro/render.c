@@ -3,15 +3,7 @@
 ////////////////////////////
 //- Default Shader Info Tables
 
-const char *r_vs_shader_src_path[R_PassType_COUNT] = 
-{
-  "../astro/shaders/geo_vs.glsl",
-};
-
-const char *r_ps_shader_src_path[R_PassType_COUNT] = 
-{
-  "../astro/shaders/geo_ps.glsl",
-};
+#include "./shaders.c"
 
 const R_Attribs r_geo_shader_input_attribs[] = 
 {
@@ -150,19 +142,18 @@ static void R_Init(void)
   // initialize default shaders
   for(u32 k = 0; k < R_PassType_COUNT; k += 1)
   {
-    struct {GLenum type; char *path; GLuint out; char *err;} stages[] =
+    struct {GLenum type; const char *src_data; u32 src_size; GLuint out; char *err;} stages[] =
     {
-      {GL_VERTEX_SHADER,   (char*)r_vs_shader_src_path[k]},
-      {GL_FRAGMENT_SHADER, (char*)r_ps_shader_src_path[k]},
+      {GL_VERTEX_SHADER,   r_vs_shader_src[k].data, r_vs_shader_src[k].size},
+      {GL_FRAGMENT_SHADER, r_ps_shader_src[k].data, r_ps_shader_src[k].size},
     };
 
     // compile shaders stages.
     for(u32 i = 0; i < ArrayCount(stages); i += 1)
     {
       GLint src_size = 0;
-      char *src_data = LoadFileData(stages[i].path, &src_size);
       stages[i].out = glCreateShader(stages[i].type);
-      glShaderSource(stages[i].out, 1, (char**)&src_data, &src_size);
+      glShaderSource(stages[i].out, 1, (char**)&stages[i].src_data, &stages[i].src_size);
       glCompileShader(stages[i].out);
       GLint info_log_length = 0;
       GLint status = 0;

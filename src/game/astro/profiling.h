@@ -4,13 +4,39 @@
 #define PROFILING_H
 
 ////////////////////////////
-//- Profiling Includes and Macros
+//- Profiling Macros
 
-#define TRACY_ENABLE 1
-#include "tracy/tracy.h"
-#pragma comment(lib, "TracyClient.lib")
+#ifndef PROFILE_TRACY
+#define PROFILE_TRACY 0
+#endif
 
-#define ProfBegin(name) TracyCZoneN(ctx, (name), 1)
-#define ProfEnd() TracyCZoneEnd(ctx)
+////////////////////////////
+//- Tracy Profiling Includes
+
+#if PROFILE_TRACY
+# define TRACY_ENABLE 1
+# include "tracy/tracy.h"
+# pragma comment(lib, "TracyClient.lib")
+#endif
+
+////////////////////////////
+//- Tracy Profiling Macros
+
+#if PROFILE_TRACY
+# define ProfBegin(name) TracyCZoneN(ctx, (name), 1)
+# define ProfEnd() TracyCZoneEnd(ctx)
+# define ProfScopeBegin() 
+# define ProfScopeEnd() TracyCFrameMark
+#endif
+
+////////////////////////////
+//- Stub Profiling Macros
+
+#if !defined(ProfBegin)
+# define ProfBegin(name) (void)(0)
+# define ProfEnd() (void)(0)
+# define ProfScopeBegin() (void)(0) 
+# define ProfScopeEnd() (void)(0)
+#endif
 
 #endif // PROFILING_H

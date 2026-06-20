@@ -1,9 +1,16 @@
 // 2026-06-17
+//
+// TODO list (features, improvements, and bug fixes)
+// -------------------------------------------------
+// [ ] Resize window when resizing occurs in the 
+//     browser. Currently window sizing is set 
+//     only on startup. 
+// [ ] 
 
 ////////////////////////////
 //- Third Party Includes
 
-#ifndef PLATFORM_WEB
+#if !defined(PLATFORM_WEB)
 #include "raylib/external/glad.h"
 #else
 #include <GLES3/gl3.h>
@@ -11,6 +18,25 @@
 #include "raylib/raylib.h"
 #include "raylib/raymath.h"
 #include "raylib/rlgl.h"
+
+////////////////////////////
+//- Game Configurations
+
+// profiling macros
+#if !defined(PLATFORM_WEB)
+#define PROFILE_TRACY 1
+#endif
+
+// opengl version
+#if defined(PLATFORM_WEB)
+# ifndef GRAPHICS_API_OPENGL_ES3
+# define GRAPHICS_API_OPENGL_ES3 1
+# endif
+#else
+# ifndef GRAPHICS_API_OPENGL_33
+# define GRAPHICS_API_OPENGL_33 1
+# endif
+#endif
 
 ////////////////////////////
 //- Game Includes
@@ -141,7 +167,7 @@ static void Game_EntryPoint(int argc, char *argv[])
       node->params.meshVertices = g_hexBuffer;
       node->params.vertCount = g_hexShape.count;
 
-      TracyCZoneN(ctx, "Push Instances", 1);
+      ProfBegin("Push Instances");
 
       // Initialize group with N instances
       node->batches = R_MakeBatchList(sizeof(R_Hull2DInst));
@@ -155,7 +181,7 @@ static void Game_EntryPoint(int argc, char *argv[])
         hull_inst->model = MatrixTranspose(model);
       }
 
-      TracyCZoneEnd(ctx);
+      ProfEnd();
     }
   }
 }

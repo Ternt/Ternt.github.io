@@ -1,6 +1,6 @@
 // 2026-06-14
 
-#define DEFAULT_FONT_PATH "../astro/fonts/jetbrains-mono.ttf"
+#define DEFAULT_FONT_PATH "astro/fonts/jetbrains-mono.ttf"
 
 //
 // helpers
@@ -56,6 +56,7 @@ static void Game_DrawOrigin(Color color)
 
 static force_inline void Game_Tick(void)
 {
+  ProfScopeBegin();
   ProfBegin("Game_Tick");
   Game_UpdatePhysics();
   Game_UpdateState();
@@ -67,8 +68,8 @@ static force_inline void Game_Tick(void)
     Game_DrawDebug();
   EndDrawing();
 
-  ProfEnd();
-  TracyCFrameMark;
+  ProfEnd(); 
+  ProfScopeEnd();
 }
 
 static force_inline void Game_MainLoop(void)

@@ -1,3 +1,5 @@
+// Copyright (c) 2013-2026 Ramon Santamaria (@raysan5)
+
 /**********************************************************************************************
 *
 *   raylib v6.1-dev - A simple and easy-to-use library to enjoy videogames programming (www.raylib.com)

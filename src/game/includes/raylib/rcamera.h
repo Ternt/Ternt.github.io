@@ -1,3 +1,5 @@
+// Copyright (c) 2013-2026 Ramon Santamaria (@raysan5)
+
 /*******************************************************************************************
 *
 *   rcamera - Basic camera system with support for multiple camera modes

@@ -1,3 +1,5 @@
+// Copyright (c) 2013-2026 Ramon Santamaria (@raysan5)
+
 /**********************************************************************************************
 *
 *   raymath v2.0 - Math functions to work with Vector2, Vector3, Vector4, Matrix and Quaternions
